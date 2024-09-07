@@ -9,12 +9,15 @@ async function main() {
 
   // Deploy MyToken for Reward and Staking
   const MyToken = await ethers.getContractFactory("MyToken");
-  const initialSupply = ethers.utils.parseEther("1000000"); // 1 million tokens
+  const decimals = 18;
+  const initialSupply = ethers.utils.parseUnits("1000000", decimals); // 1 million tokens
 
-  const rewardToken = await MyToken.deploy("Reward Token", "RT", initialSupply);
+  const rewardToken = await MyToken.deploy("Reward Token", "RT", decimals, initialSupply);
   await rewardToken.deployed();
-  const stakingToken = await MyToken.deploy("Staking Token", "ST", initialSupply);
+  
+  const stakingToken = await MyToken.deploy("Staking Token", "ST", decimals, initialSupply);
   await stakingToken.deployed();
+  
   console.log(`rewardToken: ${rewardToken.address}, stakingToken: ${stakingToken.address}`);
 
   // Deploy TokenStake implementation
@@ -27,12 +30,18 @@ async function main() {
   // Deploy Proxy
   const Proxy = await ethers.getContractFactory("StakeERC20Proxy");
   console.log("Deploying Proxy...");
-  const proxy = await Proxy.deploy(tokenStakeImplementation.address);
+  const proxy = await Proxy.deploy();
   await proxy.deployed();
   console.log("Proxy deployed to:", proxy.address);
 
-  // Initialize the TokenStake contract through the proxy
+  // Initialize the proxy
+  console.log("Initializing proxy...");
+  await proxy.initialize(tokenStakeImplementation.address);
+
+  // Get TokenStake interface for the proxy
   const proxiedTokenStake = TokenStake.attach(proxy.address);
+
+  // Initialize the TokenStake contract through the proxy
   await proxiedTokenStake.initialize(
     deployer.address,
     'contractURI',
@@ -45,10 +54,10 @@ async function main() {
   );
 
   // Approve and deposit reward tokens
-  await rewardToken.approve(proxiedTokenStake.address, ethers.utils.parseEther("1000"));
-  await proxiedTokenStake.depositRewardTokens(ethers.utils.parseEther("1000"));
+  await rewardToken.approve(proxiedTokenStake.address, ethers.utils.parseUnits("1000", decimals));
+  await proxiedTokenStake.depositRewardTokens(ethers.utils.parseUnits("1000", decimals));
   const rewardBalance = await proxiedTokenStake.getRewardTokenBalance();
-  console.log("Reward token balance in contract:", ethers.utils.formatEther(rewardBalance));
+  console.log("Reward token balance in contract:", ethers.utils.formatUnits(rewardBalance, decimals));
 
   // Save deployed addresses
   const deploymentInfo = {
