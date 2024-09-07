@@ -1,0 +1,21 @@
+# Node modules
+node_modules
+
+# Build artifacts
+artifacts
+cache
+
+# Environment variables
+.env
+
+# Hardhat configuration file (if you have sensitive information)
+# hardhat.config.js
+# hardhat.config.ts
+
+# TypeChain artifacts (if you are using TypeChain)
+typechain
+typechain-types
+
+coverage
+coverage.json
+scripts/deployment-info.json
